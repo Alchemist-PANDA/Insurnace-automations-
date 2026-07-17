@@ -33,3 +33,21 @@ BEGIN
     $f$, t);
   END LOOP;
 END $$;
+
+-- suppression_entries is tenant-scoped BUT also holds platform-level rows
+-- (tenant_id IS NULL) that apply to every tenant. A tenant must see its own
+-- rows plus the platform rows, and never another tenant's rows.
+ALTER TABLE suppression_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE suppression_entries FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation ON suppression_entries;
+CREATE POLICY tenant_isolation ON suppression_entries
+  USING (
+    current_setting('app.platform_admin', true) = 'on'
+    OR tenant_id IS NULL
+    OR tenant_id = current_setting('app.tenant_id', true)::uuid
+  )
+  WITH CHECK (
+    current_setting('app.platform_admin', true) = 'on'
+    OR tenant_id IS NULL
+    OR tenant_id = current_setting('app.tenant_id', true)::uuid
+  );

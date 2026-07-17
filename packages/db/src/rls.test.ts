@@ -77,6 +77,34 @@ d("row-level security", () => {
     expect(b?.state).toBe("new");
   });
 
+  it("suppression entries are tenant-isolated, but platform (null-tenant) rows are shared", async () => {
+    // Tenant A suppresses a number; tenant B must not see it. A platform-level
+    // suppression (tenant_id null) is visible to both.
+    await withTenant(db, { tenantId: tenantA }, (tx) =>
+      tx.insert(s.suppressionEntries).values({
+        tenantId: tenantA,
+        channel: "sms",
+        value: "+15550000001",
+        reason: "opt-out",
+      }),
+    );
+    await withTenant(db, { tenantId: tenantB, platformAdmin: true }, (tx) =>
+      tx.insert(s.suppressionEntries).values({
+        tenantId: null,
+        channel: "sms",
+        value: "+15550000002",
+        reason: "platform block",
+      }),
+    );
+
+    const bView = await withTenant(db, { tenantId: tenantB }, (tx) =>
+      tx.select({ value: s.suppressionEntries.value }).from(s.suppressionEntries),
+    );
+    const values = bView.map((r) => r.value);
+    expect(values).not.toContain("+15550000001"); // tenant A's, hidden
+    expect(values).toContain("+15550000002"); // platform-level, shared
+  });
+
   it("a platform-admin context can see across tenants (audited elevation)", async () => {
     const rows = await withTenant(
       db,

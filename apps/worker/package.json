@@ -1,0 +1,28 @@
+{
+  "name": "@stl/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/main.ts",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "echo 'no lint configured'"
+  },
+  "dependencies": {
+    "@stl/config": "workspace:*",
+    "@stl/core": "workspace:*",
+    "@stl/db": "workspace:*",
+    "@stl/logger": "workspace:*",
+    "@stl/messaging": "workspace:*",
+    "@stl/queue": "workspace:*",
+    "drizzle-orm": "^0.38.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
