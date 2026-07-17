@@ -42,5 +42,46 @@ The full engineering plan lives in [`docs/`](docs/). Read in this order:
 
 ## Status
 
-Planning phase complete. Implementation begins with Milestone 0 (repo scaffold) per
-[docs/PLAN.md](docs/PLAN.md).
+Planning complete **and Slice 1 (the revenue-critical spine) is built, wired, and
+verified end-to-end**: generic signed webhook → lead record → dedup → explainable
+scoring → first-touch SMS (via transactional outbox) → inbound reply → conversation
+timeline, plus deterministic STOP/opt-out handling and database-enforced tenant
+isolation.
+
+### What's implemented
+
+| Area | State | Where |
+|---|---|---|
+| Monorepo, tooling, CI, Docker | ✅ | root, `.github/workflows/ci.yml` |
+| Env validation, structured logging (PII redaction) | ✅ | `packages/config`, `packages/logger` |
+| Domain core (normalize, dedup, state machine, scoring, opt-out, **policy gate**) | ✅ 44 tests | `packages/core` |
+| DB schema + **row-level tenant isolation** + seed | ✅ 5 tests | `packages/db` |
+| Queue topology + Twilio/fake messaging adapter | ✅ 5 tests | `packages/queue`, `packages/adapters/messaging` |
+| Signed ingest gateway + Twilio webhooks + read API | ✅ 9 tests | `apps/api` |
+| Slice 1 worker processors (ingest→score→first-touch→relay→inbound/opt-out) | ✅ 7 E2E tests | `apps/worker` |
+| Dashboard: lead inbox + lead detail/timeline | ✅ | `apps/web` |
+| Conversation engine, routing, booking, CRM sync, analytics | ⏳ M5–M10 | see [PLAN.md](docs/PLAN.md) |
+
+**MVP acceptance criteria proven by tests today:** #1 (one lead), #2 (<30s /
+<2s ack), #3 (no duplicate messages on replay/retry), #4 (STOP suppresses +
+cancels scheduled sends), #5 (replies in dashboard), #11 (audit per action),
+#12 (tenant isolation), #13 (AI cannot execute unapproved tools), #14 (AI cannot
+invent pricing). Remaining criteria are wired to their milestones in
+[docs/testing.md](docs/testing.md).
+
+### Run it locally
+
+```bash
+pnpm install
+docker compose up -d postgres redis        # or a local Postgres + Redis
+cp .env.example .env                        # services use the restricted stl_app role
+DATABASE_URL=$MIGRATION_DATABASE_URL pnpm db:migrate   # schema + RLS + app role
+pnpm db:seed                                # Summit Roofing demo tenant
+pnpm typecheck && pnpm test                 # 74 tests, incl. real-Postgres integration
+pnpm dev                                    # web :3000, api :4000, worker
+```
+
+> RLS is only enforced for a **non-superuser** role — services connect as
+> `stl_app`, migrations run as the owner. This is the difference between "tenant
+> isolation" and a silent cross-tenant leak; see
+> [docs/data-model.md §5](docs/data-model.md).
