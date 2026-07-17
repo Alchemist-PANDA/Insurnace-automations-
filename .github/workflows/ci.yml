@@ -28,7 +28,10 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
 
     env:
-      DATABASE_URL: postgres://stl:stl@localhost:5432/stl
+      # Services (and the test run) connect as the restricted app role so RLS
+      # is actually exercised. Migrations run as the owner.
+      DATABASE_URL: postgres://stl_app:stl_app@localhost:5432/stl
+      MIGRATION_DATABASE_URL: postgres://stl:stl@localhost:5432/stl
       REDIS_URL: redis://localhost:6379
       AUTH_SECRET: ci-secret-at-least-sixteen-chars
       CREDENTIAL_ENCRYPTION_KEY: ci-only-encryption-key-base64==
@@ -45,4 +48,7 @@ jobs:
       - run: pnpm install --frozen-lockfile=false
       - run: pnpm typecheck
       - run: pnpm lint
+      # Generate + apply migrations and RLS, then bootstrap the app role,
+      # connecting as the owner.
+      - run: DATABASE_URL="$MIGRATION_DATABASE_URL" pnpm db:migrate
       - run: pnpm test
