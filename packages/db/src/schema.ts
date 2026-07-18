@@ -344,6 +344,61 @@ export const leadScores = pgTable(
   (t) => [index("lead_scores_lead").on(t.leadId)],
 );
 
+// ─── Knowledge & qualification (plan: conversation-engine §5/§6) ───────────
+
+export const knowledgeEntries = pgTable(
+  "knowledge_entries",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    // service | service_area | hours | pricing_guidance | financing | warranty
+    // | faq | exclusion | escalation_rule | promotion
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    approved: boolean("approved").notNull().default(false),
+    approvedBy: uuid("approved_by"),
+    validFrom: timestamp("valid_from", { withTimezone: true }),
+    validUntil: timestamp("valid_until", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("knowledge_tenant_type").on(t.tenantId, t.type)],
+);
+
+export const qualificationAnswers = pgTable(
+  "qualification_answers",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    schemaKey: text("schema_key").notNull(),
+    answers: jsonb("answers").notNull().default({}),
+    complete: boolean("complete").notNull().default(false),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("qualification_lead").on(t.leadId)],
+);
+
+export const aiInteractions = pgTable(
+  "ai_interactions",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    conversationId: uuid("conversation_id"),
+    promptHash: text("prompt_hash"),
+    rawResponse: text("raw_response"),
+    parsed: jsonb("parsed"),
+    gateVerdict: jsonb("gate_verdict"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    latencyMs: integer("latency_ms"),
+    correlationId: text("correlation_id"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("ai_interactions_lead").on(t.leadId)],
+);
+
 // ─── Audit ────────────────────────────────────────────────────────────────
 
 export const auditLogs = pgTable(
@@ -381,5 +436,8 @@ export const TENANT_SCOPED_TABLES = [
   "message_templates",
   "outbox",
   "lead_scores",
+  "knowledge_entries",
+  "qualification_answers",
+  "ai_interactions",
   "audit_logs",
 ] as const;

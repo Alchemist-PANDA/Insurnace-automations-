@@ -15,6 +15,7 @@
     "@stl/config": "workspace:*",
     "@stl/core": "workspace:*",
     "@stl/db": "workspace:*",
+    "@stl/llm": "workspace:*",
     "@stl/logger": "workspace:*",
     "@stl/messaging": "workspace:*",
     "@stl/queue": "workspace:*",

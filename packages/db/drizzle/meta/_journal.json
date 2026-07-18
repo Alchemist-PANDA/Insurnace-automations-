@@ -8,6 +8,13 @@
       "when": 1784270481963,
       "tag": "0000_blue_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784397281023,
+      "tag": "0001_cuddly_the_stranger",
+      "breakpoints": true
     }
   ]
 }

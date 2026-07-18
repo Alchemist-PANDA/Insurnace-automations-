@@ -13,7 +13,8 @@ DECLARE
     'tenant_settings','memberships','lead_sources','raw_webhooks',
     'ingest_idempotency','leads','lead_events','lead_identities',
     'consent_records','conversations','messages','message_delivery_events',
-    'message_templates','outbox','lead_scores','audit_logs'
+    'message_templates','outbox','lead_scores','knowledge_entries',
+    'qualification_answers','ai_interactions','audit_logs'
   ];
 BEGIN
   FOREACH t IN ARRAY tenant_tables LOOP

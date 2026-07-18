@@ -11,7 +11,9 @@ const TRANSITIONS: Record<LeadState, LeadState[]> = {
   processing: ["new", "unqualified", "archived"],
   new: ["contacted", "nurture", "unqualified", "archived"],
   contacted: ["engaged", "nurture", "unqualified", "archived"],
-  engaged: ["qualifying", "unqualified", "nurture", "archived"],
+  // A single substantive reply can fully qualify a lead, so engaged → qualified
+  // is permitted in addition to the stepwise engaged → qualifying → qualified.
+  engaged: ["qualifying", "qualified", "unqualified", "nurture", "archived"],
   qualifying: ["qualified", "unqualified", "nurture", "archived"],
   qualified: ["appointment_offered", "lost", "nurture", "archived"],
   appointment_offered: ["booked", "qualified", "lost", "nurture", "archived"],

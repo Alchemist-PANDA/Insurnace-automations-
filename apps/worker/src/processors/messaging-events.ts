@@ -2,7 +2,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { withTenant, schema, type Database } from "@stl/db";
 import { detectOptOut, assertTransition } from "@stl/core";
 import { isStatusNewer } from "@stl/messaging";
-import type { MessagingEventJob } from "@stl/queue";
+import { QUEUE, type MessagingEventJob } from "@stl/queue";
 import type { WorkerDeps } from "../deps.js";
 import { emitEvent, audit } from "../events.js";
 
@@ -103,11 +103,16 @@ async function processInbound(
       return { handled: "help" as const, leadId: lead.id };
     }
 
-    // Normal reply. Move to engaged; the conversation engine (M6) takes over
-    // qualification from here.
+    // Normal reply. Move to engaged, then hand off to the conversation engine
+    // for AI qualification (enqueued after the tx commits).
     if (lead.state === "contacted" || lead.state === "new") {
       await safeTransition(tx, lead.id, lead.state, "engaged");
     }
+    await deps.enqueue(QUEUE.conversation, `conv:${lead.id}:${providerSid || Date.now()}`, {
+      tenantId: job.tenantId,
+      leadId: lead.id,
+      correlationId: job.correlationId,
+    });
     return { handled: "recorded" as const, leadId: lead.id };
   });
 }

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { eq, and } from "drizzle-orm";
 import { getDb, withTenant, closeDb, schema } from "@stl/db";
 import { FakeSmsChannel } from "@stl/messaging";
+import { FakeLlm } from "@stl/llm";
 import { randomUUID, createHash } from "node:crypto";
 import { makeDeps, type WorkerDeps } from "./deps.js";
 import { processIngest } from "./processors/ingest.js";
@@ -39,6 +40,7 @@ d("Slice 1: webhook → lead → SMS → reply → timeline", () => {
     deps = makeDeps({
       db,
       sms,
+      llm: new FakeLlm(),
       clock: { now: () => clockNow },
       enqueue: async (queue, jobId, data) => {
         enqueued.push({ queue, jobId, data });

@@ -49,11 +49,25 @@ export interface MessagingEventJob {
   correlationId: string;
 }
 
+export interface ConversationJob {
+  tenantId: string;
+  leadId: string;
+  correlationId: string;
+}
+
+export interface CrmSyncJob {
+  tenantId: string;
+  leadId: string;
+  correlationId: string;
+}
+
 export interface JobMap {
   [QUEUE.ingest]: IngestJob;
   [QUEUE.firstTouch]: FirstTouchJob;
   [QUEUE.messagingOut]: MessagingOutJob;
   [QUEUE.messagingEvents]: MessagingEventJob;
+  [QUEUE.conversation]: ConversationJob;
+  [QUEUE.crmSync]: CrmSyncJob;
 }
 
 // ─── Connection ─────────────────────────────────────────────────────────────
