@@ -187,7 +187,12 @@ export async function processConversation(
         after: { answers: mergedAnswers },
         correlationId: job.correlationId,
       });
-      // Hand off to routing/booking.
+      // Hand off to routing (assign + escalate) and CRM sync.
+      await deps.enqueue(QUEUE.routing, `assign:${job.leadId}`, {
+        tenantId: job.tenantId,
+        leadId: job.leadId,
+        correlationId: job.correlationId,
+      });
       await deps.enqueue(QUEUE.crmSync, `crm:${job.leadId}`, {
         tenantId: job.tenantId,
         leadId: job.leadId,

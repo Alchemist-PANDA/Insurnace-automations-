@@ -18,8 +18,16 @@ export interface WorkerDeps {
   calendar: CalendarProvider;
   crm: CrmAdapter;
   clock: Clock;
-  /** Enqueue a follow-on job; the E2E test replaces this with a collector. */
-  enqueue: (queue: string, jobId: string, data: unknown) => Promise<void>;
+  /**
+   * Enqueue a follow-on job; the E2E test replaces this with a collector.
+   * `opts.delay` (ms) schedules a durable delayed job (escalation/follow-ups).
+   */
+  enqueue: (
+    queue: string,
+    jobId: string,
+    data: unknown,
+    opts?: { delay?: number },
+  ) => Promise<void>;
 }
 
 export function makeDeps(

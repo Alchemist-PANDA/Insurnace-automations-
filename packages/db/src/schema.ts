@@ -196,6 +196,56 @@ export const leadIdentities = pgTable(
   ],
 );
 
+// ─── Routing & assignment (plan: blueprint §5G, PLAN M5) ───────────────────
+
+export const territories = pgTable(
+  "territories",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    userId: uuid("user_id").notNull(),
+    // ZIP prefix or region code this rep covers.
+    key: text("key").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("territories_tenant").on(t.tenantId)],
+);
+
+export const userSchedules = pgTable(
+  "user_schedules",
+  {
+    tenantId: tenantId(),
+    userId: uuid("user_id").notNull(),
+    available: boolean("available").notNull().default(true),
+    workloadCap: integer("workload_cap").notNull().default(10),
+    specialties: jsonb("specialties").notNull().default([]),
+    updatedAt: updatedAt(),
+  },
+  (t) => [primaryKey({ columns: [t.tenantId, t.userId] })],
+);
+
+export const leadAssignments = pgTable(
+  "lead_assignments",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    userId: uuid("user_id"),
+    role: text("role").notNull().default("primary"), // primary|fallback
+    reason: text("reason"),
+    acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("lead_assignments_lead").on(t.leadId)],
+);
+
+// Rolling round-robin cursor per tenant (single row).
+export const routingState = pgTable("routing_state", {
+  tenantId: tenantId().primaryKey(),
+  roundRobinCursor: integer("round_robin_cursor").notNull().default(0),
+  updatedAt: updatedAt(),
+});
+
 // ─── Compliance ───────────────────────────────────────────────────────────
 
 export const consentRecords = pgTable(
@@ -536,6 +586,10 @@ export const TENANT_SCOPED_TABLES = [
   "message_templates",
   "outbox",
   "lead_scores",
+  "territories",
+  "user_schedules",
+  "lead_assignments",
+  "routing_state",
   "knowledge_entries",
   "qualification_answers",
   "ai_interactions",

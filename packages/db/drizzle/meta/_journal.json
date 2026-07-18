@@ -29,6 +29,13 @@
       "when": 1784397982247,
       "tag": "0003_wise_absorbing_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784400221957,
+      "tag": "0004_heavy_green_goblin",
+      "breakpoints": true
     }
   ]
 }

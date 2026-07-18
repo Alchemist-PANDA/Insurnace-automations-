@@ -12,6 +12,8 @@ import {
   type ConversationJob,
   type BookingJob,
   type CrmSyncJob,
+  type AssignJob,
+  type EscalationJob,
 } from "@stl/queue";
 import { FakeSmsChannel, TwilioSmsChannel, type MessageChannel } from "@stl/messaging";
 import { FakeLlm, AnthropicLlm, type LlmProvider } from "@stl/llm";
@@ -26,6 +28,8 @@ import { processMessagingEvent } from "./processors/messaging-events.js";
 import { processConversation } from "./processors/conversation.js";
 import { processBooking } from "./processors/booking.js";
 import { processCrmSync } from "./processors/crm-sync.js";
+import { processAssignment } from "./processors/assignment.js";
+import { processEscalation } from "./processors/escalation.js";
 
 /**
  * Worker entrypoint — wires processors to BullMQ queues (plan: architecture
@@ -59,8 +63,8 @@ async function main() {
     calendar,
     crm,
     clock: systemClock,
-    enqueue: (queue, jobId, data) =>
-      realEnqueue(queue as never, jobId, data as never),
+    enqueue: (queue, jobId, data, opts) =>
+      realEnqueue(queue as never, jobId, data as never, opts ?? {}),
   });
 
   const workers = [
@@ -79,6 +83,8 @@ async function main() {
     ),
     createWorker(QUEUE.calendar, (job) => processBooking(deps, job.data as BookingJob)),
     createWorker(QUEUE.crmSync, (job) => processCrmSync(deps, job.data as CrmSyncJob)),
+    createWorker(QUEUE.routing, (job) => processAssignment(deps, job.data as AssignJob)),
+    createWorker(QUEUE.escalation, (job) => processEscalation(deps, job.data as EscalationJob)),
   ];
 
   for (const w of workers) {

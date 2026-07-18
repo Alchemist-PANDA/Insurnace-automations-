@@ -11,6 +11,7 @@ export const QUEUE = {
   messagingOut: "messaging-out",
   messagingEvents: "messaging-events",
   conversation: "conversation",
+  routing: "routing",
   workflow: "workflow",
   escalation: "escalation",
   crmSync: "crm-sync",
@@ -70,6 +71,28 @@ export interface BookingJob {
   correlationId: string;
 }
 
+export interface AssignJob {
+  tenantId: string;
+  leadId: string;
+  correlationId: string;
+}
+
+export interface EscalationJob {
+  tenantId: string;
+  leadId: string;
+  stepIndex: number;
+  correlationId: string;
+}
+
+export interface WorkflowJob {
+  tenantId: string;
+  leadId: string;
+  trigger: string;
+  runId?: string;
+  stepKey?: string;
+  correlationId: string;
+}
+
 export interface JobMap {
   [QUEUE.ingest]: IngestJob;
   [QUEUE.firstTouch]: FirstTouchJob;
@@ -78,6 +101,9 @@ export interface JobMap {
   [QUEUE.conversation]: ConversationJob;
   [QUEUE.crmSync]: CrmSyncJob;
   [QUEUE.calendar]: BookingJob;
+  [QUEUE.routing]: AssignJob;
+  [QUEUE.escalation]: EscalationJob;
+  [QUEUE.workflow]: WorkflowJob;
 }
 
 // ─── Connection ─────────────────────────────────────────────────────────────
@@ -112,10 +138,16 @@ export function getQueue<N extends keyof JobMap>(
  * Enqueue with a deterministic job id so retries/replays of the same logical
  * event collapse to one job (plan: reliability — idempotency keys).
  */
+export interface EnqueueOpts {
+  /** Delay in milliseconds before the job becomes available (durable). */
+  delay?: number;
+}
+
 export async function enqueue<N extends keyof JobMap>(
   name: N,
   jobId: string,
   data: JobMap[N],
+  opts: EnqueueOpts = {},
   connection = redisConnection(),
 ): Promise<void> {
   const q = getQueue(name, connection);
@@ -123,7 +155,7 @@ export async function enqueue<N extends keyof JobMap>(
   await (q.add as (n: string, d: JobMap[N], o: object) => Promise<unknown>)(
     name,
     data,
-    { ...DEFAULT_JOB_OPTS, jobId },
+    { ...DEFAULT_JOB_OPTS, jobId, delay: opts.delay },
   );
 }
 
