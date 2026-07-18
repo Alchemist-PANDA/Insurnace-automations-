@@ -42,11 +42,16 @@ The full engineering plan lives in [`docs/`](docs/). Read in this order:
 
 ## Status
 
-Planning complete **and Slice 1 (the revenue-critical spine) is built, wired, and
-verified end-to-end**: generic signed webhook → lead record → dedup → explainable
-scoring → first-touch SMS (via transactional outbox) → inbound reply → conversation
-timeline, plus deterministic STOP/opt-out handling and database-enforced tenant
-isolation.
+Planning complete **and both vertical slices are built, wired, and verified
+end-to-end** against a real Postgres + Redis (112 tests across 12 packages):
+
+- **Slice 1 (revenue spine):** generic signed webhook → lead record → dedup →
+  explainable scoring → first-touch SMS (transactional outbox) → inbound reply →
+  conversation timeline, plus deterministic STOP/opt-out and DB-enforced tenant
+  isolation.
+- **Slice 2 (conversion loop):** AI qualification (LLM behind the deterministic
+  policy gate) → routing → Google Calendar booking (with a real concurrency
+  guard) → HubSpot sync.
 
 ### What's implemented
 
@@ -54,19 +59,23 @@ isolation.
 |---|---|---|
 | Monorepo, tooling, CI, Docker | ✅ | root, `.github/workflows/ci.yml` |
 | Env validation, structured logging (PII redaction) | ✅ | `packages/config`, `packages/logger` |
-| Domain core (normalize, dedup, state machine, scoring, opt-out, **policy gate**) | ✅ 44 tests | `packages/core` |
+| Domain core — normalize, dedup, state machine, scoring, **routing**, opt-out, **policy gate**, **qualification**, **slot engine** | ✅ 61 tests | `packages/core` |
 | DB schema + **row-level tenant isolation** + seed | ✅ 5 tests | `packages/db` |
 | Queue topology + Twilio/fake messaging adapter | ✅ 5 tests | `packages/queue`, `packages/adapters/messaging` |
+| **LLM adapter** (Anthropic + FakeLlm, structured-output contract) | ✅ 5 tests | `packages/adapters/llm` |
+| **Calendar adapter** (Google + FakeCalendar) · **CRM adapter** (HubSpot + FakeCrm) | ✅ 4 tests | `packages/adapters/{calendar,crm}` |
 | Signed ingest gateway + Twilio webhooks + read API | ✅ 9 tests | `apps/api` |
-| Slice 1 worker processors (ingest→score→first-touch→relay→inbound/opt-out) | ✅ 7 E2E tests | `apps/worker` |
+| Worker: ingest→score→first-touch→relay→inbound/opt-out, **conversation engine**, **booking**, **CRM sync** | ✅ 19 E2E tests | `apps/worker` |
 | Dashboard: lead inbox + lead detail/timeline | ✅ | `apps/web` |
-| Conversation engine, routing, booking, CRM sync, analytics | ⏳ M5–M10 | see [PLAN.md](docs/PLAN.md) |
+| SLA escalation timers, analytics/attribution, compliance dashboard | ⏳ M8/M10 | see [PLAN.md](docs/PLAN.md) |
 
 **MVP acceptance criteria proven by tests today:** #1 (one lead), #2 (<30s /
-<2s ack), #3 (no duplicate messages on replay/retry), #4 (STOP suppresses +
-cancels scheduled sends), #5 (replies in dashboard), #11 (audit per action),
-#12 (tenant isolation), #13 (AI cannot execute unapproved tools), #14 (AI cannot
-invent pricing). Remaining criteria are wired to their milestones in
+<2s ack), #3 (no duplicate messages), #4 (STOP suppresses + cancels scheduled
+sends), #5 (replies in dashboard), #6 (structured qualification data), #7
+(booking + concurrency guard), #10 (HubSpot contact/note/meeting), #11 (audit
+per action), #12 (tenant isolation), #13 (AI cannot execute unapproved tools),
+#14 (AI cannot invent pricing). Remaining criteria (#8 human takeover UI, #9
+DLQ retry UI, #15 analytics accuracy) are wired to their milestones in
 [docs/testing.md](docs/testing.md).
 
 ### Run it locally
