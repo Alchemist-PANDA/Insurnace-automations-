@@ -10,9 +10,13 @@ import {
   type MessagingOutJob,
   type MessagingEventJob,
   type ConversationJob,
+  type BookingJob,
+  type CrmSyncJob,
 } from "@stl/queue";
 import { FakeSmsChannel, TwilioSmsChannel, type MessageChannel } from "@stl/messaging";
 import { FakeLlm, AnthropicLlm, type LlmProvider } from "@stl/llm";
+import { FakeCalendar, type CalendarProvider } from "@stl/calendar";
+import { FakeCrm, HubSpotCrm, type CrmAdapter } from "@stl/crm";
 import { systemClock } from "@stl/core";
 import { makeDeps } from "./deps.js";
 import { processIngest } from "./processors/ingest.js";
@@ -20,6 +24,8 @@ import { processFirstTouch } from "./processors/first-touch.js";
 import { processMessagingOut } from "./processors/relay.js";
 import { processMessagingEvent } from "./processors/messaging-events.js";
 import { processConversation } from "./processors/conversation.js";
+import { processBooking } from "./processors/booking.js";
+import { processCrmSync } from "./processors/crm-sync.js";
 
 /**
  * Worker entrypoint — wires processors to BullMQ queues (plan: architecture
@@ -43,10 +49,15 @@ async function main() {
       ? new FakeLlm()
       : new AnthropicLlm({ apiKey: env.ANTHROPIC_API_KEY, model: env.LLM_MODEL });
 
+  const calendar: CalendarProvider = new FakeCalendar();
+  const crm: CrmAdapter = env.USE_FAKE_ADAPTERS ? new FakeCrm() : new HubSpotCrm();
+
   const deps = makeDeps({
     db,
     sms,
     llm,
+    calendar,
+    crm,
     clock: systemClock,
     enqueue: (queue, jobId, data) =>
       realEnqueue(queue as never, jobId, data as never),
@@ -66,6 +77,8 @@ async function main() {
     createWorker(QUEUE.conversation, (job) =>
       processConversation(deps, job.data as ConversationJob),
     ),
+    createWorker(QUEUE.calendar, (job) => processBooking(deps, job.data as BookingJob)),
+    createWorker(QUEUE.crmSync, (job) => processCrmSync(deps, job.data as CrmSyncJob)),
   ];
 
   for (const w of workers) {

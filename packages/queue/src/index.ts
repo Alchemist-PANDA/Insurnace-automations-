@@ -61,6 +61,15 @@ export interface CrmSyncJob {
   correlationId: string;
 }
 
+export interface BookingJob {
+  tenantId: string;
+  leadId: string;
+  calendarConnectionId: string;
+  startsAt: string; // ISO
+  endsAt: string; // ISO
+  correlationId: string;
+}
+
 export interface JobMap {
   [QUEUE.ingest]: IngestJob;
   [QUEUE.firstTouch]: FirstTouchJob;
@@ -68,6 +77,7 @@ export interface JobMap {
   [QUEUE.messagingEvents]: MessagingEventJob;
   [QUEUE.conversation]: ConversationJob;
   [QUEUE.crmSync]: CrmSyncJob;
+  [QUEUE.calendar]: BookingJob;
 }
 
 // ─── Connection ─────────────────────────────────────────────────────────────

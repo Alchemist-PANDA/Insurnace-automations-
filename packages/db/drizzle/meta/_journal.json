@@ -15,6 +15,20 @@
       "when": 1784397281023,
       "tag": "0001_cuddly_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784397697523,
+      "tag": "0002_overjoyed_maelstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784397982247,
+      "tag": "0003_wise_absorbing_man",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,8 @@
 import type { Database } from "@stl/db";
 import type { MessageChannel } from "@stl/messaging";
 import type { LlmProvider } from "@stl/llm";
+import type { CalendarProvider } from "@stl/calendar";
+import type { CrmAdapter } from "@stl/crm";
 import type { Clock } from "@stl/core";
 import { systemClock } from "@stl/core";
 
@@ -13,13 +15,21 @@ export interface WorkerDeps {
   db: Database;
   sms: MessageChannel;
   llm: LlmProvider;
+  calendar: CalendarProvider;
+  crm: CrmAdapter;
   clock: Clock;
   /** Enqueue a follow-on job; the E2E test replaces this with a collector. */
   enqueue: (queue: string, jobId: string, data: unknown) => Promise<void>;
 }
 
 export function makeDeps(
-  partial: Partial<WorkerDeps> & { db: Database; sms: MessageChannel; llm: LlmProvider },
+  partial: Partial<WorkerDeps> & {
+    db: Database;
+    sms: MessageChannel;
+    llm: LlmProvider;
+    calendar: CalendarProvider;
+    crm: CrmAdapter;
+  },
 ): WorkerDeps {
   return {
     clock: systemClock,

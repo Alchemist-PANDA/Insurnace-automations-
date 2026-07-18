@@ -9,4 +9,6 @@ export {
   processConversation,
   type ConversationResult,
 } from "./processors/conversation.js";
+export { processBooking, releaseExpiredHolds, type BookingResult } from "./processors/booking.js";
+export { processCrmSync, type CrmSyncResult } from "./processors/crm-sync.js";
 export { makeDeps, type WorkerDeps } from "./deps.js";

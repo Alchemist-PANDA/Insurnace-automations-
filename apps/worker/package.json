@@ -12,8 +12,10 @@
     "lint": "echo 'no lint configured'"
   },
   "dependencies": {
+    "@stl/calendar": "workspace:*",
     "@stl/config": "workspace:*",
     "@stl/core": "workspace:*",
+    "@stl/crm": "workspace:*",
     "@stl/db": "workspace:*",
     "@stl/llm": "workspace:*",
     "@stl/logger": "workspace:*",

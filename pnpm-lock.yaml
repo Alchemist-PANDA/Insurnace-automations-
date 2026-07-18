@@ -88,12 +88,18 @@ importers:
 
   apps/worker:
     dependencies:
+      '@stl/calendar':
+        specifier: workspace:*
+        version: link:../../packages/adapters/calendar
       '@stl/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@stl/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@stl/crm':
+        specifier: workspace:*
+        version: link:../../packages/adapters/crm
       '@stl/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -116,6 +122,28 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/adapters/calendar:
+    dependencies:
+      '@stl/core':
+        specifier: workspace:*
+        version: link:../../core
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)
+
+  packages/adapters/crm:
+    devDependencies:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

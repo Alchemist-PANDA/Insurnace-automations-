@@ -344,6 +344,62 @@ export const leadScores = pgTable(
   (t) => [index("lead_scores_lead").on(t.leadId)],
 );
 
+// ─── Scheduling (plan: integrations §3, PLAN M7) ───────────────────────────
+
+export const calendarConnections = pgTable(
+  "calendar_connections",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    userId: uuid("user_id").notNull(),
+    provider: text("provider").notNull().default("google"),
+    calendarId: text("calendar_id").notNull(),
+    // Encrypted at rest in the app layer before storage.
+    accessTokenEnc: text("access_token_enc").notNull(),
+    refreshTokenEnc: text("refresh_token_enc"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("calendar_conn_user").on(t.tenantId, t.userId)],
+);
+
+export const appointments = pgTable(
+  "appointments",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    userId: uuid("user_id"),
+    calendarConnectionId: uuid("calendar_connection_id"),
+    externalEventId: text("external_event_id"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    status: text("status").notNull().default("booked"), // booked|cancelled|no_show|completed
+    createdAt: createdAt(),
+  },
+  (t) => [index("appointments_lead").on(t.leadId)],
+);
+
+export const slotHolds = pgTable(
+  "slot_holds",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    calendarConnectionId: uuid("calendar_connection_id").notNull(),
+    leadId: uuid("lead_id").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    status: text("status").notNull().default("held"), // held|confirmed|released
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    // Two leads cannot hold/confirm the same calendar slot concurrently.
+    uniqueIndex("slot_holds_unique")
+      .on(t.calendarConnectionId, t.startsAt)
+      .where(sql`status in ('held','confirmed')`),
+  ],
+);
+
 // ─── Knowledge & qualification (plan: conversation-engine §5/§6) ───────────
 
 export const knowledgeEntries = pgTable(
@@ -399,6 +455,50 @@ export const aiInteractions = pgTable(
   (t) => [index("ai_interactions_lead").on(t.leadId)],
 );
 
+// ─── CRM (plan: integrations §4, PLAN M9) ──────────────────────────────────
+
+export const crmConnections = pgTable(
+  "crm_connections",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    provider: text("provider").notNull().default("hubspot"),
+    accessTokenEnc: text("access_token_enc").notNull(),
+    portalId: text("portal_id"),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("crm_conn_tenant_provider").on(t.tenantId, t.provider)],
+);
+
+export const crmMappings = pgTable(
+  "crm_mappings",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    contactExternalId: text("contact_external_id"),
+    dealExternalId: text("deal_external_id"),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("crm_mapping_lead").on(t.leadId)],
+);
+
+export const crmSyncJobs = pgTable(
+  "crm_sync_jobs",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    status: text("status").notNull().default("pending"), // pending|synced|failed
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("crm_sync_lead").on(t.leadId)],
+);
+
 // ─── Audit ────────────────────────────────────────────────────────────────
 
 export const auditLogs = pgTable(
@@ -439,5 +539,11 @@ export const TENANT_SCOPED_TABLES = [
   "knowledge_entries",
   "qualification_answers",
   "ai_interactions",
+  "calendar_connections",
+  "appointments",
+  "slot_holds",
+  "crm_connections",
+  "crm_mappings",
+  "crm_sync_jobs",
   "audit_logs",
 ] as const;

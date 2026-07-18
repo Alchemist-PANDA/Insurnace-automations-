@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { getDb, withTenant, closeDb, schema } from "@stl/db";
 import { FakeSmsChannel } from "@stl/messaging";
 import { FakeLlm } from "@stl/llm";
+import { FakeCalendar } from "@stl/calendar";
+import { FakeCrm } from "@stl/crm";
 import { randomUUID } from "node:crypto";
 import { makeDeps, type WorkerDeps } from "./deps.js";
 import { processConversation } from "./processors/conversation.js";
@@ -47,6 +49,8 @@ d("conversation orchestrator", () => {
       db: getDb(),
       sms,
       llm,
+      calendar: new FakeCalendar(),
+      crm: new FakeCrm(),
       clock: { now: () => clockNow },
       enqueue: async (queue, _jobId, data) => {
         enqueued.push({ queue, data });

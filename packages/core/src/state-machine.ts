@@ -15,7 +15,9 @@ const TRANSITIONS: Record<LeadState, LeadState[]> = {
   // is permitted in addition to the stepwise engaged → qualifying → qualified.
   engaged: ["qualifying", "qualified", "unqualified", "nurture", "archived"],
   qualifying: ["qualified", "unqualified", "nurture", "archived"],
-  qualified: ["appointment_offered", "lost", "nurture", "archived"],
+  // booked is reachable directly (a rep or the lead can book without a separate
+  // explicit "offered" step) as well as via appointment_offered.
+  qualified: ["appointment_offered", "booked", "lost", "nurture", "archived"],
   appointment_offered: ["booked", "qualified", "lost", "nurture", "archived"],
   booked: ["won", "lost", "appointment_offered", "archived"],
   nurture: ["engaged", "contacted", "unqualified", "archived"],

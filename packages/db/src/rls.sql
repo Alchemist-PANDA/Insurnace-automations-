@@ -14,7 +14,9 @@ DECLARE
     'ingest_idempotency','leads','lead_events','lead_identities',
     'consent_records','conversations','messages','message_delivery_events',
     'message_templates','outbox','lead_scores','knowledge_entries',
-    'qualification_answers','ai_interactions','audit_logs'
+    'qualification_answers','ai_interactions','calendar_connections',
+    'appointments','slot_holds','crm_connections','crm_mappings',
+    'crm_sync_jobs','audit_logs'
   ];
 BEGIN
   FOREACH t IN ARRAY tenant_tables LOOP
