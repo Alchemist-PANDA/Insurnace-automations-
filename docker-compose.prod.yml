@@ -1,0 +1,54 @@
+# Production-shaped topology (plan: architecture §8). In a real deployment
+# Postgres and Redis are managed services; this file is for a self-hosted or
+# staging box. Secrets come from the environment / a secret manager, never here.
+services:
+  migrate:
+    build: { context: ., target: api }
+    command: ["pnpm", "--filter", "@stl/db", "migrate"]
+    environment:
+      DATABASE_URL: ${MIGRATION_DATABASE_URL}
+    restart: "no"
+
+  api:
+    build: { context: ., target: api }
+    depends_on: [migrate]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      AUTH_SECRET: ${AUTH_SECRET}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
+      AUTH_ALLOW_DEV_HEADERS: "false"
+      WEB_ORIGIN: ${WEB_ORIGIN}
+      USE_FAKE_ADAPTERS: "false"
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    ports: ["4000:4000"]
+    restart: unless-stopped
+
+  worker:
+    build: { context: ., target: worker }
+    depends_on: [migrate]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CREDENTIAL_ENCRYPTION_KEY: ${CREDENTIAL_ENCRYPTION_KEY}
+      AUTH_SECRET: ${AUTH_SECRET}
+      USE_FAKE_ADAPTERS: "false"
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    restart: unless-stopped
+
+  web:
+    build: { context: ., target: web }
+    environment:
+      NODE_ENV: production
+      API_BASE_URL: ${API_BASE_URL}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    ports: ["3000:3000"]
+    restart: unless-stopped
