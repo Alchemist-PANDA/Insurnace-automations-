@@ -7,6 +7,8 @@ import { registerIngestRoutes } from "./routes/ingest.js";
 import { registerTwilioRoutes } from "./routes/twilio.js";
 import { registerLeadRoutes } from "./routes/leads.js";
 import { registerLeadActionRoutes } from "./routes/lead-actions.js";
+import { registerHubSpotRoutes } from "./routes/hubspot.js";
+import { registerAnalyticsRoutes } from "./routes/analytics.js";
 
 export interface BuildOptions {
   /** Inject a db for tests; defaults to the shared pool. */
@@ -49,6 +51,8 @@ export async function buildServer(opts: BuildOptions = {}): Promise<FastifyInsta
   registerTwilioRoutes(app, db);
   registerLeadRoutes(app, db);
   registerLeadActionRoutes(app, db);
+  registerHubSpotRoutes(app, db);
+  registerAnalyticsRoutes(app, db);
 
   return app;
 }

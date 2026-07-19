@@ -13,5 +13,6 @@ export * from "./policy-gate.js";
 export * from "./qualification.js";
 export * from "./slots.js";
 export * from "./workflow.js";
+export * from "./analytics.js";
 export * from "./templating.js";
 export * from "./verticals/roofing-hvac.js";

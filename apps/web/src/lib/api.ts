@@ -49,5 +49,27 @@ async function api<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface Analytics {
+  responseTime: {
+    count: number;
+    contacted: number;
+    medianMs: number;
+    p90Ms: number;
+    withinPct: { s30: number; s60: number; s90: number };
+  };
+  funnel: {
+    counts: { total: number; contacted: number; replied: number; qualified: number; booked: number; won: number };
+    rates: { contactRate: number; replyRate: number; qualificationRate: number; bookingRate: number; closeRate: number };
+  };
+  attribution: { attributedGrossProfit: number; wonDeals: number };
+}
+
+export interface IntegrationHealth {
+  crm: { total: number; synced: number; failed: number };
+  dlq: { failedMessages: number; items: { id: string; body: string; createdAt: string }[]; pendingOutbox: number };
+}
+
 export const getLeads = () => api<{ leads: LeadRow[] }>("/v1/leads");
 export const getLead = (id: string) => api<LeadDetail>(`/v1/leads/${id}`);
+export const getAnalytics = () => api<Analytics>("/v1/analytics");
+export const getHealth = () => api<IntegrationHealth>("/v1/health/integrations");

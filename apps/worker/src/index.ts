@@ -11,6 +11,7 @@ export {
 } from "./processors/conversation.js";
 export { processBooking, releaseExpiredHolds, type BookingResult } from "./processors/booking.js";
 export { processCrmSync, type CrmSyncResult } from "./processors/crm-sync.js";
+export { processCrmInbound, type CrmDealEvent } from "./processors/crm-inbound.js";
 export { processAssignment, type AssignResult } from "./processors/assignment.js";
 export {
   processEscalation,

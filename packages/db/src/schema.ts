@@ -586,6 +586,21 @@ export const crmMappings = pgTable(
   (t) => [uniqueIndex("crm_mapping_lead").on(t.leadId)],
 );
 
+export const outcomes = pgTable(
+  "outcomes",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    type: text("type").notNull(), // won | lost
+    amount: integer("amount"),
+    grossProfit: integer("gross_profit"),
+    reason: text("reason"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("outcomes_lead").on(t.leadId)],
+);
+
 export const crmSyncJobs = pgTable(
   "crm_sync_jobs",
   {
@@ -650,6 +665,7 @@ export const TENANT_SCOPED_TABLES = [
   "crm_connections",
   "crm_mappings",
   "crm_sync_jobs",
+  "outcomes",
   "workflow_runs",
   "workflow_steps",
   "tasks",
