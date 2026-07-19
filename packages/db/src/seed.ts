@@ -56,12 +56,33 @@ async function main() {
       },
     });
 
-    await tx.insert(s.messageTemplates).values({
-      tenantId,
-      key: "first_touch",
-      channel: "sms",
-      body: roofingHvacFirstTouchTemplate,
-    });
+    await tx.insert(s.messageTemplates).values([
+      { tenantId, key: "first_touch", channel: "sms", body: roofingHvacFirstTouchTemplate },
+      {
+        tenantId,
+        key: "followup_1",
+        channel: "sms",
+        body: "Hi {{firstName}}, Ava from {{businessName}} again — still happy to help with {{serviceLabel}}. Want me to hold an inspection time? Reply STOP to opt out.",
+      },
+      {
+        tenantId,
+        key: "followup_2",
+        channel: "sms",
+        body: "Hi {{firstName}}, checking in one more time from {{businessName}}. Just reply here whenever you're ready. Reply STOP to opt out.",
+      },
+      {
+        tenantId,
+        key: "book_reminder_1",
+        channel: "sms",
+        body: "Hi {{firstName}}, you're all set to pick an inspection time with {{businessName}} — a couple of slots are still open this week. Reply STOP to opt out.",
+      },
+      {
+        tenantId,
+        key: "no_show_1",
+        channel: "sms",
+        body: "Hi {{firstName}}, sorry we missed you for the {{serviceLabel}} inspection. Want to grab a new time? Reply STOP to opt out.",
+      },
+    ]);
   });
 
   console.log(`Seeded tenant Summit Roofing (${tenantId})`);

@@ -11,6 +11,7 @@ import {
 import { QUEUE, type WorkflowJob } from "@stl/queue";
 import type { WorkerDeps } from "../deps.js";
 import { emitEvent, audit } from "../events.js";
+import { composeAndEnqueue } from "../messaging.js";
 
 export interface WorkflowResult {
   status: "started" | "step_executed" | "stopped" | "completed" | "no_workflow";
@@ -186,15 +187,33 @@ async function executeAction(
     }
     case "send_sms":
     case "send_email": {
-      // Enqueue through the same outbox path the conversation engine uses, so
-      // consent/suppression/quiet-hours still gate the send. Here we record the
-      // intent as an event; the message composition reuses templates.
+      // Actually compose + send through the shared gated outbox path. Consent,
+      // suppression, quiet hours, and follow-up caps all apply; a blocked or
+      // duplicate step is recorded but never silently sends.
+      const [convo] = await tx
+        .select({ id: schema.conversations.id })
+        .from(schema.conversations)
+        .where(eq(schema.conversations.leadId, job.leadId))
+        .limit(1);
+      if (!convo) break;
+      const channel = action.type === "send_email" ? "email" : "sms";
+      const result = await composeAndEnqueue({
+        tx,
+        deps,
+        tenantId: job.tenantId,
+        leadId: job.leadId,
+        conversationId: convo.id,
+        channel,
+        templateKey: action.templateKey,
+        dedupeScope: `wf:${def.key}:${stepKey}`,
+        correlationId: job.correlationId,
+      });
       await emitEvent(tx, {
         tenantId: job.tenantId,
         leadId: job.leadId,
-        type: "workflow.message_requested",
+        type: "workflow.message_" + result.status,
         correlationId: job.correlationId,
-        payload: { templateKey: action.templateKey, channel: action.type },
+        payload: { templateKey: action.templateKey, channel, status: result.status },
       });
       break;
     }

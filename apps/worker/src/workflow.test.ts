@@ -46,14 +46,17 @@ d("workflow engine + takeover", () => {
     await closeDb();
   });
 
-  async function makeLead(state: string, phone: string): Promise<string> {
+  async function makeLead(state: string, phone: string, granted = false): Promise<string> {
     const db = getDb();
     return withTenant(db, { tenantId }, async (tx) => {
       const [lead] = await tx
         .insert(schema.leads)
-        .values({ tenantId, state, firstName: "Sarah", phoneE164: phone })
+        .values({ tenantId, state, firstName: "Sarah", phoneE164: phone, serviceRequested: "roof_replacement" })
         .returning({ id: schema.leads.id });
       await tx.insert(schema.conversations).values({ tenantId, leadId: lead!.id, channel: "sms" });
+      if (granted) {
+        await tx.insert(schema.consentRecords).values({ tenantId, leadId: lead!.id, channel: "sms", status: "granted" });
+      }
       return lead!.id;
     });
   }
@@ -89,6 +92,51 @@ d("workflow engine + takeover", () => {
     );
     expect(steps.length).toBeGreaterThanOrEqual(1);
     expect(steps[0]!.status).toBe("executed");
+  });
+
+  it("a send_sms step actually composes a gated message + outbox and enqueues the relay", async () => {
+    enqueued.length = 0;
+    const leadId = await makeLead("contacted", "+12145551350", true); // consent granted
+    // Provide the follow-up template the default sequence references.
+    await withTenant(getDb(), { tenantId }, (tx) =>
+      tx.insert(schema.messageTemplates).values({
+        tenantId,
+        key: "followup_1",
+        channel: "sms",
+        body: "Hi {{firstName}}, following up from {{businessName}}. Reply STOP to opt out.",
+      }).onConflictDoNothing(),
+    );
+    const start = await processWorkflow(deps, { tenantId, leadId, trigger: "no_reply", correlationId: "ws" });
+    const runId = start.runId!;
+    await processWorkflow(deps, { tenantId, leadId, trigger: "no_reply", runId, stepKey: "sms_1", correlationId: "ws" });
+
+    const db = getDb();
+    const convo = (await withTenant(db, { tenantId }, (tx) =>
+      tx.select().from(schema.conversations).where(eq(schema.conversations.leadId, leadId)),
+    ))[0]!;
+    const msgs = await withTenant(db, { tenantId }, (tx) =>
+      tx.select().from(schema.messages).where(eq(schema.messages.conversationId, convo.id)),
+    );
+    const outbound = msgs.filter((m) => m.direction === "out" && m.templateKey === "followup_1");
+    expect(outbound.length).toBe(1); // a real message was composed
+    expect(outbound[0]!.body).toContain("Sarah"); // rendered from the template
+    expect(outbound[0]!.body.toLowerCase()).toContain("following up");
+    expect(enqueued.some((e) => e.queue === "messaging-out")).toBe(true); // relay enqueued
+  });
+
+  it("a follow-up send is blocked by the policy gate when there is no consent", async () => {
+    const leadId = await makeLead("contacted", "+12145551351", false); // NO consent
+    const start = await processWorkflow(deps, { tenantId, leadId, trigger: "no_reply", correlationId: "wb" });
+    await processWorkflow(deps, { tenantId, leadId, trigger: "no_reply", runId: start.runId!, stepKey: "sms_1", correlationId: "wb" });
+    const db = getDb();
+    const convo = (await withTenant(db, { tenantId }, (tx) =>
+      tx.select().from(schema.conversations).where(eq(schema.conversations.leadId, leadId)),
+    ))[0]!;
+    const outbound = await withTenant(db, { tenantId }, (tx) =>
+      tx.select().from(schema.messages).where(eq(schema.messages.conversationId, convo.id)),
+    );
+    // No message composed — the gate blocked it (compliance holds even in follow-ups).
+    expect(outbound.filter((m) => m.direction === "out").length).toBe(0);
   });
 
   it("stops the sequence when the lead books mid-flow (stop condition)", async () => {
