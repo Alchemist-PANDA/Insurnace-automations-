@@ -214,6 +214,13 @@ tbody tr:last-child td { border-bottom: none; }
 .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); box-shadow: none; }
 .btn.ghost:hover { border-color: var(--faint); filter: none; }
 
+.fld {
+  width: 100%; background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: 9px; padding: 10px 12px; color: var(--text); font: inherit; outline: none;
+}
+.fld:focus { border-color: var(--accent); }
+.label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; }
   .sidebar { display: none; }

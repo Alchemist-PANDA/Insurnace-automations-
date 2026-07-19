@@ -1,22 +1,19 @@
 import type { FastifyInstance } from "fastify";
 import { desc, eq, and } from "drizzle-orm";
 import { withTenant, schema, type Database } from "@stl/db";
+import { requireAuth } from "../auth/context.js";
 
 /**
  * Read endpoints for the dashboard (plan: PLAN M2 lead inbox, M3 timeline).
  *
- * Tenant is taken from the `x-tenant-id` header as a DEV SHIM until better-auth
- * sessions land in M1. Every query still runs inside withTenant so RLS is
- * enforced regardless.
+ * Tenant comes from the authenticated session (or the dev-header fallback, which
+ * production rejects). Every query runs inside withTenant so RLS is enforced.
  */
 export function registerLeadRoutes(app: FastifyInstance, db: Database): void {
   app.get("/v1/leads", async (req, reply) => {
-    const tenantId = tenantFrom(req.headers);
-    if (!tenantId) {
-      reply.code(400);
-      return { error: "x-tenant-id required" };
-    }
-    return withTenant(db, { tenantId }, async (tx) => {
+    const auth = await requireAuth(db, req, reply);
+    if (!auth) return;
+    return withTenant(db, { tenantId: auth.tenantId }, async (tx) => {
       const rows = await tx
         .select({
           id: schema.leads.id,
@@ -39,13 +36,10 @@ export function registerLeadRoutes(app: FastifyInstance, db: Database): void {
   });
 
   app.get("/v1/leads/:id", async (req, reply) => {
-    const tenantId = tenantFrom(req.headers);
+    const auth = await requireAuth(db, req, reply);
+    if (!auth) return;
     const { id } = req.params as { id: string };
-    if (!tenantId) {
-      reply.code(400);
-      return { error: "x-tenant-id required" };
-    }
-    return withTenant(db, { tenantId }, async (tx) => {
+    return withTenant(db, { tenantId: auth.tenantId }, async (tx) => {
       const [lead] = await tx
         .select()
         .from(schema.leads)
@@ -104,11 +98,4 @@ export function registerLeadRoutes(app: FastifyInstance, db: Database): void {
 
   // Suppress reference so `and` stays importable for future filters.
   void and;
-}
-
-function tenantFrom(
-  headers: Record<string, string | string[] | undefined>,
-): string | undefined {
-  const v = headers["x-tenant-id"];
-  return Array.isArray(v) ? v[0] : v;
 }

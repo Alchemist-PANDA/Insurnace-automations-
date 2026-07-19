@@ -39,6 +39,14 @@ const EnvSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((v) => v === "true"),
+
+  // When true, API routes accept x-tenant-id/x-user-id headers as an auth
+  // fallback (dev + tests). FORCED OFF in production regardless of this value —
+  // see `devAuthAllowed()`.
+  AUTH_ALLOW_DEV_HEADERS: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -61,4 +69,14 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
 /** Test helper: reset the cached env so a fresh source can be loaded. */
 export function resetEnvCache(): void {
   cached = undefined;
+}
+
+/**
+ * Whether the x-tenant-id/x-user-id dev-header auth fallback is permitted.
+ * Production ALWAYS rejects it, no matter the env flag — this is the guard that
+ * makes the header shim safe to keep for local/tests.
+ */
+export function devAuthAllowed(env: Env = loadEnv()): boolean {
+  if (env.NODE_ENV === "production") return false;
+  return env.AUTH_ALLOW_DEV_HEADERS;
 }

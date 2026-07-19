@@ -1,6 +1,6 @@
 import { getDb, withTenant, closeDb } from "./client.js";
 import * as s from "./schema.js";
-import { roofingHvacFirstTouchTemplate } from "@stl/core";
+import { roofingHvacFirstTouchTemplate, hashPassword } from "@stl/core";
 import { randomUUID } from "node:crypto";
 
 /**
@@ -30,9 +30,11 @@ async function main() {
       ["admin@platform.test", "Pat Admin", "platform_admin"],
     ] as const;
 
+    // Demo password for every seeded user (dev only): "demo1234".
+    const demoHash = hashPassword("demo1234");
     for (const [email, name, role] of roles) {
       const userId = randomUUID();
-      await tx.insert(s.users).values({ id: userId, email, name });
+      await tx.insert(s.users).values({ id: userId, email, name, passwordHash: demoHash });
       await tx.insert(s.memberships).values({ tenantId, userId, role });
     }
 

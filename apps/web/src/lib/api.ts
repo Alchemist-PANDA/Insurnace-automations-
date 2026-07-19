@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
+
 /**
- * Dashboard data access. Reads from the API service. Tenant is supplied via the
- * `x-tenant-id` dev shim header (better-auth sessions land in M1); the API still
- * enforces RLS on every query.
+ * Dashboard data access. Reads from the API service, forwarding the viewer's
+ * session cookie so the API authenticates the request and enforces RLS + RBAC.
+ * The `x-tenant-id` dev header is a local fallback the API refuses in production.
  */
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:4000";
 const DEV_TENANT = process.env.DEV_TENANT_ID ?? "";
@@ -41,10 +43,12 @@ export interface LeadDetail {
 }
 
 async function api<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "x-tenant-id": DEV_TENANT },
-    cache: "no-store",
-  });
+  const cookieStore = await cookies();
+  const session = cookieStore.get("stl_session");
+  const headers: Record<string, string> = {};
+  if (session) headers.cookie = `stl_session=${session.value}`;
+  else if (DEV_TENANT) headers["x-tenant-id"] = DEV_TENANT; // local fallback only
+  const res = await fetch(`${API_BASE}${path}`, { headers, cache: "no-store" });
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
   return res.json() as Promise<T>;
 }

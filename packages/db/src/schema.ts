@@ -50,6 +50,22 @@ export const users = pgTable("users", {
   createdAt: createdAt(),
 });
 
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: id(),
+    userId: uuid("user_id").notNull(),
+    // The tenant this session is currently acting within.
+    tenantId: uuid("tenant_id").notNull(),
+    role: text("role").notNull(),
+    // Only the SHA-256 hash of the token is stored (raw lives in the cookie).
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("sessions_user").on(t.userId)],
+);
+
 export const memberships = pgTable(
   "memberships",
   {

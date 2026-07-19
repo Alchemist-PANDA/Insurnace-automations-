@@ -50,6 +50,13 @@
       "when": 1784442145116,
       "tag": "0006_little_charles_xavier",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784466315555,
+      "tag": "0007_fantastic_sasquatch",
+      "breakpoints": true
     }
   ]
 }

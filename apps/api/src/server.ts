@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance, type FastifyBaseLogger } from "fastify";
 import formbody from "@fastify/formbody";
 import rateLimit from "@fastify/rate-limit";
+import cors from "@fastify/cors";
 import { getDb } from "@stl/db";
 import { createLogger } from "@stl/logger";
 import { registerHealthRoutes } from "./routes/health.js";
@@ -10,6 +11,7 @@ import { registerLeadRoutes } from "./routes/leads.js";
 import { registerLeadActionRoutes } from "./routes/lead-actions.js";
 import { registerHubSpotRoutes } from "./routes/hubspot.js";
 import { registerAnalyticsRoutes } from "./routes/analytics.js";
+import { registerAuthRoutes } from "./routes/auth.js";
 
 export interface BuildOptions {
   /** Inject a db for tests; defaults to the shared pool. */
@@ -42,6 +44,12 @@ export async function buildServer(opts: BuildOptions = {}): Promise<FastifyInsta
     },
   );
 
+  // Allow the dashboard origin to call the API with the session cookie.
+  await app.register(cors, {
+    origin: (process.env.WEB_ORIGIN ?? "http://localhost:3000").split(","),
+    credentials: true,
+  });
+
   // Twilio posts application/x-www-form-urlencoded.
   await app.register(formbody);
 
@@ -62,6 +70,7 @@ export async function buildServer(opts: BuildOptions = {}): Promise<FastifyInsta
   const db = opts.db ?? getDb();
 
   registerHealthRoutes(app, db);
+  registerAuthRoutes(app, db);
   registerIngestRoutes(app, db);
   registerTwilioRoutes(app, db);
   registerLeadRoutes(app, db);

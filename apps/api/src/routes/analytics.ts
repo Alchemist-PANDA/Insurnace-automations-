@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { eq, and, inArray } from "drizzle-orm";
 import { withTenant, schema, type Database } from "@stl/db";
 import { responseTimeStats, funnelRates, type ResponsePair } from "@stl/core";
+import { requireAuth } from "../auth/context.js";
 
 /**
  * Analytics (plan: blueprint §6, PLAN M10). Response-time and funnel metrics are
@@ -10,10 +11,10 @@ import { responseTimeStats, funnelRates, type ResponsePair } from "@stl/core";
  */
 export function registerAnalyticsRoutes(app: FastifyInstance, db: Database): void {
   app.get("/v1/analytics", async (req, reply) => {
-    const tenantId = one(req.headers["x-tenant-id"]);
-    if (!tenantId) return reply.code(400).send({ error: "x-tenant-id required" });
+    const auth = await requireAuth(db, req, reply);
+    if (!auth) return;
 
-    return withTenant(db, { tenantId }, async (tx) => {
+    return withTenant(db, { tenantId: auth.tenantId }, async (tx) => {
       const events = await tx
         .select({
           leadId: schema.leadEvents.leadId,
@@ -99,9 +100,9 @@ export function registerAnalyticsRoutes(app: FastifyInstance, db: Database): voi
 
   // Integration health + DLQ view (plan: PLAN M9/M10, MVP acceptance #9).
   app.get("/v1/health/integrations", async (req, reply) => {
-    const tenantId = one(req.headers["x-tenant-id"]);
-    if (!tenantId) return reply.code(400).send({ error: "x-tenant-id required" });
-    return withTenant(db, { tenantId }, async (tx) => {
+    const auth = await requireAuth(db, req, reply);
+    if (!auth) return;
+    return withTenant(db, { tenantId: auth.tenantId }, async (tx) => {
       const syncJobs = await tx.select().from(schema.crmSyncJobs);
       const failedMessages = await tx
         .select({ id: schema.messages.id, body: schema.messages.body, createdAt: schema.messages.createdAt })
@@ -127,8 +128,4 @@ export function registerAnalyticsRoutes(app: FastifyInstance, db: Database): voi
   });
 
   void and;
-}
-
-function one(v: string | string[] | undefined): string | undefined {
-  return Array.isArray(v) ? v[0] : v;
 }
