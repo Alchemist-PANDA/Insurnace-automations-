@@ -14,6 +14,7 @@ import {
   type CrmSyncJob,
   type AssignJob,
   type EscalationJob,
+  type WorkflowJob,
 } from "@stl/queue";
 import { FakeSmsChannel, TwilioSmsChannel, type MessageChannel } from "@stl/messaging";
 import { FakeLlm, AnthropicLlm, type LlmProvider } from "@stl/llm";
@@ -30,6 +31,7 @@ import { processBooking } from "./processors/booking.js";
 import { processCrmSync } from "./processors/crm-sync.js";
 import { processAssignment } from "./processors/assignment.js";
 import { processEscalation } from "./processors/escalation.js";
+import { processWorkflow } from "./processors/workflow.js";
 
 /**
  * Worker entrypoint — wires processors to BullMQ queues (plan: architecture
@@ -85,6 +87,7 @@ async function main() {
     createWorker(QUEUE.crmSync, (job) => processCrmSync(deps, job.data as CrmSyncJob)),
     createWorker(QUEUE.routing, (job) => processAssignment(deps, job.data as AssignJob)),
     createWorker(QUEUE.escalation, (job) => processEscalation(deps, job.data as EscalationJob)),
+    createWorker(QUEUE.workflow, (job) => processWorkflow(deps, job.data as WorkflowJob)),
   ];
 
   for (const w of workers) {

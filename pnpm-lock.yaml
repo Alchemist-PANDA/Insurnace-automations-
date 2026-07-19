@@ -47,6 +47,9 @@ importers:
       '@stl/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@stl/worker':
+        specifier: workspace:*
+        version: link:../worker
       drizzle-orm:
         specifier: ^0.38.3
         version: 0.38.4(@types/react@19.2.17)(postgres@3.4.9)(react@19.2.7)

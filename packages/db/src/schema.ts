@@ -505,6 +505,57 @@ export const aiInteractions = pgTable(
   (t) => [index("ai_interactions_lead").on(t.leadId)],
 );
 
+// ─── Workflows & tasks (plan: blueprint §5J, PLAN M8) ──────────────────────
+
+export const workflowRuns = pgTable(
+  "workflow_runs",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    workflowKey: text("workflow_key").notNull(),
+    version: integer("version").notNull().default(1),
+    trigger: text("trigger").notNull(),
+    status: text("status").notNull().default("running"), // running|completed|stopped|failed
+    stopReason: text("stop_reason"),
+    currentStep: integer("current_step").notNull().default(0),
+    startedAt: createdAt(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+  },
+  (t) => [index("workflow_runs_lead").on(t.leadId)],
+);
+
+export const workflowSteps = pgTable(
+  "workflow_steps",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    runId: uuid("run_id").notNull(),
+    stepKey: text("step_key").notNull(),
+    actionType: text("action_type").notNull(),
+    status: text("status").notNull().default("scheduled"), // scheduled|executed|skipped|failed
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+    executedAt: timestamp("executed_at", { withTimezone: true }),
+    output: jsonb("output"),
+    error: text("error"),
+  },
+  (t) => [index("workflow_steps_run").on(t.runId)],
+);
+
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    leadId: uuid("lead_id").notNull(),
+    assigneeUserId: uuid("assignee_user_id"),
+    note: text("note").notNull(),
+    status: text("status").notNull().default("open"), // open|done
+    createdAt: createdAt(),
+  },
+  (t) => [index("tasks_lead").on(t.leadId)],
+);
+
 // ─── CRM (plan: integrations §4, PLAN M9) ──────────────────────────────────
 
 export const crmConnections = pgTable(
@@ -599,5 +650,8 @@ export const TENANT_SCOPED_TABLES = [
   "crm_connections",
   "crm_mappings",
   "crm_sync_jobs",
+  "workflow_runs",
+  "workflow_steps",
+  "tasks",
   "audit_logs",
 ] as const;

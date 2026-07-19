@@ -17,4 +17,10 @@ export {
   acknowledgeLead,
   type EscalationResult,
 } from "./processors/escalation.js";
+export { processWorkflow, type WorkflowResult } from "./processors/workflow.js";
+export {
+  takeoverLead,
+  resumeLead,
+  retryFailedMessage,
+} from "./processors/takeover.js";
 export { makeDeps, type WorkerDeps } from "./deps.js";

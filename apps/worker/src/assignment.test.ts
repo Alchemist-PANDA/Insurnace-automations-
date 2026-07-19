@@ -42,7 +42,10 @@ d("assignment + escalation", () => {
 
     await withTenant(db, { tenantId }, async (tx) => {
       await tx.insert(schema.tenants).values({ id: tenantId, name: "Summit", slug: `s-${tenantId.slice(0, 8)}` });
-      for (const [uid, email] of [[repA, "a@x.com"], [repB, "b@x.com"]] as const) {
+      for (const [uid, email] of [
+        [repA, `a-${repA.slice(0, 8)}@x.com`],
+        [repB, `b-${repB.slice(0, 8)}@x.com`],
+      ] as const) {
         await tx.insert(schema.users).values({ id: uid, email });
         await tx.insert(schema.memberships).values({ tenantId, userId: uid, role: "sales_rep" });
         await tx.insert(schema.userSchedules).values({ tenantId, userId: uid, available: true, workloadCap: 10 });

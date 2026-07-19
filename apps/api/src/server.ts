@@ -6,6 +6,7 @@ import { registerHealthRoutes } from "./routes/health.js";
 import { registerIngestRoutes } from "./routes/ingest.js";
 import { registerTwilioRoutes } from "./routes/twilio.js";
 import { registerLeadRoutes } from "./routes/leads.js";
+import { registerLeadActionRoutes } from "./routes/lead-actions.js";
 
 export interface BuildOptions {
   /** Inject a db for tests; defaults to the shared pool. */
@@ -47,6 +48,7 @@ export async function buildServer(opts: BuildOptions = {}): Promise<FastifyInsta
   registerIngestRoutes(app, db);
   registerTwilioRoutes(app, db);
   registerLeadRoutes(app, db);
+  registerLeadActionRoutes(app, db);
 
   return app;
 }

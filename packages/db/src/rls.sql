@@ -17,7 +17,7 @@ DECLARE
     'user_schedules','lead_assignments','routing_state','knowledge_entries',
     'qualification_answers','ai_interactions','calendar_connections',
     'appointments','slot_holds','crm_connections','crm_mappings',
-    'crm_sync_jobs','audit_logs'
+    'crm_sync_jobs','workflow_runs','workflow_steps','tasks','audit_logs'
   ];
 BEGIN
   FOREACH t IN ARRAY tenant_tables LOOP
