@@ -13,7 +13,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <div className="app">
           <aside className="sidebar">
-            <div className="brand">Speed-to-Lead</div>
+            <div className="brand">
+              <div className="brand-text">
+                <b>Summit Roofing</b>
+                <span>Speed-to-Lead</span>
+              </div>
+            </div>
             <nav>
               <Link href="/leads">Lead inbox</Link>
               <Link href="/hot">Hot-lead queue</Link>
@@ -21,7 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/compliance">Compliance</Link>
               <Link href="/health">System health</Link>
             </nav>
-            <div className="footnote">Pilot build · roofing/HVAC</div>
+            <div className="footnote">Pilot build · roofing / HVAC</div>
           </aside>
           <main className="content">{children}</main>
         </div>
