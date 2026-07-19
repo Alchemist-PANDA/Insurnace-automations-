@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance, type FastifyBaseLogger } from "fastify";
 import formbody from "@fastify/formbody";
+import rateLimit from "@fastify/rate-limit";
 import { getDb } from "@stl/db";
 import { createLogger } from "@stl/logger";
 import { registerHealthRoutes } from "./routes/health.js";
@@ -43,6 +44,20 @@ export async function buildServer(opts: BuildOptions = {}): Promise<FastifyInsta
 
   // Twilio posts application/x-www-form-urlencoded.
   await app.register(formbody);
+
+  // Rate limiting on public endpoints (plan: compliance §3, PLAN M11). Keyed by
+  // source key for ingest, else by IP. Generous default; providers/webhooks
+  // burst legitimately, so this guards abuse, not normal traffic.
+  await app.register(rateLimit, {
+    global: true,
+    max: 300,
+    timeWindow: "1 minute",
+    keyGenerator: (req) => {
+      const params = req.params as { sourceId?: string } | undefined;
+      return params?.sourceId ?? req.ip;
+    },
+    allowList: (req) => req.url === "/healthz" || req.url === "/readyz",
+  });
 
   const db = opts.db ?? getDb();
 

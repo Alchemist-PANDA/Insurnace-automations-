@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLead } from "@/lib/api";
+import { LeadActions } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,8 @@ export default async function LeadDetailPage({
         </div>
 
         <div>
+          <LeadActions leadId={lead.id} state={lead.state} />
+
           <div className="card">
             <h3>Score {latestScore ? `· ${latestScore.total}` : ""}</h3>
             {latestScore ? (
